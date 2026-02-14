@@ -1,7 +1,8 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, memo, useMemo, useCallback } from 'react';
 import './App.css';
 import anasImage from './images/anas.png';
 import Typed from 'typed.js';
+import ContactForm from './components/ContactForm';
 import {
   AppBar,
   Toolbar,
@@ -72,8 +73,8 @@ const darkTheme = createTheme({
   },
 });
 
-// 3D Rotating Neon Torus Component
-function NeonTorus() {
+// 3D Rotating Neon Torus Component - Memoized for performance
+const NeonTorus = memo(function NeonTorus() {
   const torusRef = useRef();
 
   useFrame((state) => {
@@ -99,10 +100,10 @@ function NeonTorus() {
       />
     </mesh>
   );
-}
+});
 
-// Scroll-Based 3D Model Component
-function ScrollCube({ scrollY }) {
+// Scroll-Based 3D Model Component - Memoized for performance
+const ScrollCube = memo(function ScrollCube({ scrollY }) {
   const cubeRef = useRef();
 
   useFrame(() => {
@@ -129,7 +130,7 @@ function ScrollCube({ scrollY }) {
       />
     </mesh>
   );
-}
+});
 
 function App() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -138,11 +139,19 @@ function App() {
   const typedRoleElement = useRef(null);
 
   useEffect(() => {
+    let ticking = false;
+    
     const handleScroll = () => {
-      setScrollY(window.scrollY);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setScrollY(window.scrollY);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -193,15 +202,15 @@ function App() {
     setMobileOpen(!mobileOpen);
   };
 
-  const scrollToSection = (sectionId) => {
+  const scrollToSection = useCallback((sectionId) => {
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
     setMobileOpen(false);
-  };
+  }, []);
 
-  const menuItems = ['Home', 'About', 'Projects', 'Contact'];
+  const menuItems = useMemo(() => ['Home', 'About', 'Projects', 'Contact'], []);
 
   // Mobile drawer
   const drawer = (
@@ -426,14 +435,14 @@ function App() {
                   <Box sx={{ mt: 5, display: 'flex', gap: 3 }}>
                     <IconButton 
                       sx={{ color: '#00e5ff', '&:hover': { color: '#ff00ff' }, fontSize: '2rem' }}
-                      onClick={() => window.open('https://github.com/appuafran66-prog', '_blank')}
+                      onClick={() => window.open('https://github.com/appuafran66-prog', '_blank', 'noopener,noreferrer')}
                       aria-label="GitHub"
                     >
                       <GitHub fontSize="large" />
                     </IconButton>
                     <IconButton 
                       sx={{ color: '#00e5ff', '&:hover': { color: '#ff00ff' }, fontSize: '2rem' }}
-                      onClick={() => window.open('https://www.linkedin.com/in/mohamed-anas-731361394', '_blank')}
+                      onClick={() => window.open('https://www.linkedin.com/in/mohamed-anas-731361394', '_blank', 'noopener,noreferrer')}
                       aria-label="LinkedIn"
                     >
                       <LinkedIn fontSize="large" />
@@ -517,134 +526,283 @@ function App() {
         <Box
           id="about"
           sx={{
-            py: 12,
+            py: { xs: 8, md: 12 },
+            px: { xs: 2, sm: 3 },
             background: 'linear-gradient(180deg, #0a0e27 0%, #1a1e3e 100%)',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: { xs: '300px', md: '600px' },
+              height: { xs: '300px', md: '600px' },
+              background: 'radial-gradient(circle, rgba(0,229,255,0.1) 0%, transparent 70%)',
+              pointerEvents: 'none',
+            },
           }}
         >
-          <Container maxWidth="lg">
-            <Typography
-              variant="h2"
-              align="center"
-              sx={{
-                mb: 8,
-                fontSize: { xs: '2.5rem', md: '3.5rem' },
-                background: 'linear-gradient(45deg, #00e5ff, #ff00ff)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              About Me
-            </Typography>
-            <Grid container spacing={6}>
-              <Grid item xs={12} md={4}>
+          <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+            <Box sx={{ textAlign: 'center', mb: { xs: 6, md: 8 } }}>
+              <Typography
+                variant="overline"
+                sx={{
+                  color: '#00e5ff',
+                  fontSize: { xs: '0.85rem', md: '1rem' },
+                  letterSpacing: '0.2em',
+                  fontWeight: 600,
+                  mb: 2,
+                  display: 'block',
+                }}
+              >
+                GET TO KNOW ME
+              </Typography>
+              <Typography
+                variant="h2"
+                sx={{
+                  fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' },
+                  background: 'linear-gradient(45deg, #00e5ff, #ff00ff)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: 700,
+                  mb: 2,
+                }}
+              >
+                About Me
+              </Typography>
+              <Box
+                sx={{
+                  width: { xs: '60px', md: '80px' },
+                  height: '4px',
+                  background: 'linear-gradient(90deg, #00e5ff, #ff00ff)',
+                  margin: '0 auto',
+                  borderRadius: '2px',
+                }}
+              />
+            </Box>
+            <Grid container spacing={{ xs: 3, sm: 4, md: 6 }}>
+              <Grid item xs={12} sm={6} md={4}>
                 <Card
                   sx={{
                     height: '100%',
-                    background: 'rgba(255, 255, 255, 0.05)',
+                    background: 'rgba(255, 255, 255, 0.03)',
                     backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '20px',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: { xs: '16px', md: '20px' },
                     boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-                    transition: 'all 0.3s ease',
+                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '4px',
+                      background: 'linear-gradient(90deg, #00e5ff, #ff00ff)',
+                      transform: 'scaleX(0)',
+                      transformOrigin: 'left',
+                      transition: 'transform 0.4s ease',
+                    },
                     '&:hover': {
-                      transform: 'translateY(-10px)',
+                      transform: 'translateY(-12px)',
                       background: 'rgba(255, 255, 255, 0.08)',
                       border: '1px solid rgba(0, 229, 255, 0.4)',
-                      boxShadow: '0 10px 40px rgba(0, 229, 255, 0.3)',
+                      boxShadow: '0 16px 48px rgba(0, 229, 255, 0.3)',
+                      '&::before': {
+                        transform: 'scaleX(1)',
+                      },
                     }
                   }}
                 >
-                  <CardContent sx={{ textAlign: 'center', py: 5 }}>
+                  <CardContent sx={{ textAlign: 'center', py: { xs: 4, md: 5 }, px: { xs: 2, md: 3 } }}>
                     <Avatar
                       sx={{
-                        width: 100,
-                        height: 100,
+                        width: { xs: 80, md: 100 },
+                        height: { xs: 80, md: 100 },
                         margin: '0 auto 24px',
-                        background: 'linear-gradient(45deg, #00e5ff, #ff00ff)',
+                        background: 'linear-gradient(135deg, #00e5ff, #ff00ff)',
+                        boxShadow: '0 8px 24px rgba(0, 229, 255, 0.3)',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          transform: 'rotate(360deg) scale(1.1)',
+                        },
                       }}
                     >
-                      <Code fontSize="large" />
+                      <Code sx={{ fontSize: { xs: '2rem', md: '2.5rem' } }} />
                     </Avatar>
-                    <Typography variant="h5" sx={{ mb: 3, color: '#00e5ff', fontSize: '1.5rem' }}>
+                    <Typography 
+                      variant="h5" 
+                      sx={{ 
+                        mb: 2, 
+                        color: '#00e5ff', 
+                        fontSize: { xs: '1.25rem', md: '1.5rem' },
+                        fontWeight: 600,
+                      }}
+                    >
                       Developer
                     </Typography>
-                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '1.1rem', lineHeight: 1.8 }}>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: 'rgba(255, 255, 255, 0.75)', 
+                        fontSize: { xs: '0.95rem', md: '1.05rem' }, 
+                        lineHeight: 1.8,
+                      }}
+                    >
                       Currently working as Remote Full-Stack Developer at WebXKey, contributing to real-world projects using Laravel, PHP, and React.js.
                     </Typography>
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12} sm={6} md={4}>
                 <Card
                   sx={{
                     height: '100%',
-                    background: 'rgba(255, 255, 255, 0.05)',
+                    background: 'rgba(255, 255, 255, 0.03)',
                     backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '20px',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: { xs: '16px', md: '20px' },
                     boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-                    transition: 'all 0.3s ease',
+                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '4px',
+                      background: 'linear-gradient(90deg, #ff00ff, #00e5ff)',
+                      transform: 'scaleX(0)',
+                      transformOrigin: 'left',
+                      transition: 'transform 0.4s ease',
+                    },
                     '&:hover': {
-                      transform: 'translateY(-10px)',
+                      transform: 'translateY(-12px)',
                       background: 'rgba(255, 255, 255, 0.08)',
                       border: '1px solid rgba(255, 0, 255, 0.4)',
-                      boxShadow: '0 10px 40px rgba(255, 0, 255, 0.3)',
+                      boxShadow: '0 16px 48px rgba(255, 0, 255, 0.3)',
+                      '&::before': {
+                        transform: 'scaleX(1)',
+                      },
                     }
                   }}
                 >
-                  <CardContent sx={{ textAlign: 'center', py: 5 }}>
+                  <CardContent sx={{ textAlign: 'center', py: { xs: 4, md: 5 }, px: { xs: 2, md: 3 } }}>
                     <Avatar
                       sx={{
-                        width: 100,
-                        height: 100,
+                        width: { xs: 80, md: 100 },
+                        height: { xs: 80, md: 100 },
                         margin: '0 auto 24px',
-                        background: 'linear-gradient(45deg, #ff00ff, #00e5ff)',
+                        background: 'linear-gradient(135deg, #ff00ff, #00e5ff)',
+                        boxShadow: '0 8px 24px rgba(255, 0, 255, 0.3)',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          transform: 'rotate(360deg) scale(1.1)',
+                        },
                       }}
                     >
-                      <EmojiObjects fontSize="large" />
+                      <EmojiObjects sx={{ fontSize: { xs: '2rem', md: '2.5rem' } }} />
                     </Avatar>
-                    <Typography variant="h5" sx={{ mb: 3, color: '#ff00ff', fontSize: '1.5rem' }}>
+                    <Typography 
+                      variant="h5" 
+                      sx={{ 
+                        mb: 2, 
+                        color: '#ff00ff', 
+                        fontSize: { xs: '1.25rem', md: '1.5rem' },
+                        fontWeight: 600,
+                      }}
+                    >
                       Problem Solver
                     </Typography>
-                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '1.1rem', lineHeight: 1.8 }}>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: 'rgba(255, 255, 255, 0.75)', 
+                        fontSize: { xs: '0.95rem', md: '1.05rem' }, 
+                        lineHeight: 1.8,
+                      }}
+                    >
                       Passionate about learning new technologies and applying best practices in web development. Building full-stack applications with modern tools.
                     </Typography>
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12} sm={12} md={4}>
                 <Card
                   sx={{
                     height: '100%',
-                    background: 'rgba(255, 255, 255, 0.05)',
+                    background: 'rgba(255, 255, 255, 0.03)',
                     backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '20px',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: { xs: '16px', md: '20px' },
                     boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-                    transition: 'all 0.3s ease',
+                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '4px',
+                      background: 'linear-gradient(90deg, #00ff88, #00e5ff)',
+                      transform: 'scaleX(0)',
+                      transformOrigin: 'left',
+                      transition: 'transform 0.4s ease',
+                    },
                     '&:hover': {
-                      transform: 'translateY(-10px)',
+                      transform: 'translateY(-12px)',
                       background: 'rgba(255, 255, 255, 0.08)',
                       border: '1px solid rgba(0, 255, 136, 0.4)',
-                      boxShadow: '0 10px 40px rgba(0, 255, 136, 0.3)',
+                      boxShadow: '0 16px 48px rgba(0, 255, 136, 0.3)',
+                      '&::before': {
+                        transform: 'scaleX(1)',
+                      },
                     }
                   }}
                 >
-                  <CardContent sx={{ textAlign: 'center', py: 5 }}>
+                  <CardContent sx={{ textAlign: 'center', py: { xs: 4, md: 5 }, px: { xs: 2, md: 3 } }}>
                     <Avatar
                       sx={{
-                        width: 100,
-                        height: 100,
+                        width: { xs: 80, md: 100 },
+                        height: { xs: 80, md: 100 },
                         margin: '0 auto 24px',
-                        background: 'linear-gradient(45deg, #00ff88, #00e5ff)',
+                        background: 'linear-gradient(135deg, #00ff88, #00e5ff)',
+                        boxShadow: '0 8px 24px rgba(0, 255, 136, 0.3)',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          transform: 'rotate(360deg) scale(1.1)',
+                        },
                       }}
                     >
-                      <Rocket fontSize="large" />
+                      <Rocket sx={{ fontSize: { xs: '2rem', md: '2.5rem' } }} />
                     </Avatar>
-                    <Typography variant="h5" sx={{ mb: 3, color: '#00ff88', fontSize: '1.5rem' }}>
+                    <Typography 
+                      variant="h5" 
+                      sx={{ 
+                        mb: 2, 
+                        color: '#00ff88', 
+                        fontSize: { xs: '1.25rem', md: '1.5rem' },
+                        fontWeight: 600,
+                      }}
+                    >
                       Fast Learner
                     </Typography>
-                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '1.1rem', lineHeight: 1.8 }}>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: 'rgba(255, 255, 255, 0.75)', 
+                        fontSize: { xs: '0.95rem', md: '1.05rem' }, 
+                        lineHeight: 1.8,
+                      }}
+                    >
                       BSc Computer Software Engineering student at London Metropolitan University. Eager to connect with tech professionals and grow as a developer.
                     </Typography>
                   </CardContent>
@@ -784,7 +942,7 @@ function App() {
                           boxShadow: '0 10px 30px rgba(255, 0, 255, 0.3)',
                         }
                       }}
-                      onClick={() => window.open(cert.url, '_blank')}
+                      onClick={() => window.open(cert.url, '_blank', 'noopener,noreferrer')}
                     >
                       <CardContent sx={{ py: 3 }}>
                         <Box
@@ -1002,54 +1160,108 @@ function App() {
         <Box
           id="projects"
           sx={{
-            py: 12,
+            py: { xs: 8, md: 12 },
+            px: { xs: 2, sm: 3 },
             background: 'linear-gradient(180deg, #1a1e3e 0%, #0a0e27 100%)',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              bottom: 0,
+              right: '10%',
+              width: { xs: '250px', md: '500px' },
+              height: { xs: '250px', md: '500px' },
+              background: 'radial-gradient(circle, rgba(255,0,255,0.08) 0%, transparent 70%)',
+              pointerEvents: 'none',
+            },
           }}
         >
-          <Container maxWidth="lg">
-            <Typography
-              variant="h2"
-              align="center"
-              sx={{
-                mb: 8,
-                fontSize: { xs: '2.5rem', md: '3.5rem' },
-                background: 'linear-gradient(45deg, #ff00ff, #00e5ff)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              Featured Projects
-            </Typography>
-            <Grid container spacing={6}>
+          <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+            <Box sx={{ textAlign: 'center', mb: { xs: 6, md: 8 } }}>
+              <Typography
+                variant="overline"
+                sx={{
+                  color: '#ff00ff',
+                  fontSize: { xs: '0.85rem', md: '1rem' },
+                  letterSpacing: '0.2em',
+                  fontWeight: 600,
+                  mb: 2,
+                  display: 'block',
+                }}
+              >
+                MY RECENT WORK
+              </Typography>
+              <Typography
+                variant="h2"
+                sx={{
+                  fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' },
+                  background: 'linear-gradient(45deg, #ff00ff, #00e5ff)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: 700,
+                  mb: 2,
+                }}
+              >
+                Featured Projects
+              </Typography>
+              <Box
+                sx={{
+                  width: { xs: '60px', md: '80px' },
+                  height: '4px',
+                  background: 'linear-gradient(90deg, #ff00ff, #00e5ff)',
+                  margin: '0 auto',
+                  borderRadius: '2px',
+                }}
+              />
+            </Box>
+            <Grid container spacing={{ xs: 3, sm: 4, md: 6 }}>
               {projects.map((project, index) => (
                 <Grid item xs={12} md={6} key={index}>
                   <Card
                     sx={{
                       height: '100%',
-                      background: 'rgba(255, 255, 255, 0.05)',
+                      background: 'rgba(255, 255, 255, 0.03)',
                       backdropFilter: 'blur(20px)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '20px',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: { xs: '16px', md: '20px' },
                       boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-                      transition: 'all 0.3s ease',
+                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                       display: 'flex',
                       flexDirection: 'column',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: '3px',
+                        background: `linear-gradient(90deg, ${project.color}, transparent)`,
+                        opacity: 0,
+                        transition: 'opacity 0.3s ease',
+                      },
                       '&:hover': {
-                        transform: 'translateY(-10px)',
+                        transform: 'translateY(-12px) scale(1.02)',
                         background: 'rgba(255, 255, 255, 0.08)',
                         border: `1px solid ${project.color}`,
-                        boxShadow: `0 10px 40px ${project.color}66`,
+                        boxShadow: `0 16px 48px ${project.color}66`,
+                        '&::after': {
+                          opacity: 1,
+                        },
                       }
                     }}
                   >
-                    <CardContent sx={{ flexGrow: 1, p: 4 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                    <CardContent sx={{ flexGrow: 1, p: { xs: 3, md: 4 } }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, gap: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
                         <Typography
                           variant="h5"
                           sx={{
                             color: project.color,
                             fontWeight: 600,
-                            fontSize: '1.5rem'
+                            fontSize: { xs: '1.25rem', md: '1.5rem' },
+                            flex: 1,
                           }}
                         >
                           {project.title}
@@ -1061,46 +1273,72 @@ function App() {
                             background: `${project.color}22`,
                             color: project.color,
                             border: `1px solid ${project.color}44`,
-                            fontSize: '0.7rem'
+                            fontSize: { xs: '0.65rem', md: '0.7rem' },
+                            fontWeight: 600,
+                            letterSpacing: '0.05em',
                           }}
                         />
                       </Box>
                       <Typography
                         variant="body2"
                         sx={{
-                          mb: 4,
-                          color: 'rgba(255, 255, 255, 0.7)',
-                          lineHeight: 2,
-                          fontSize: '1.05rem'
+                          mb: 3,
+                          color: 'rgba(255, 255, 255, 0.75)',
+                          lineHeight: 1.9,
+                          fontSize: { xs: '0.95rem', md: '1.05rem' }
                         }}
                       >
                         {project.description}
                       </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 1, md: 1.5 } }}>
                         {project.tech.map((tech, i) => (
                           <Chip
                             key={i}
                             label={tech}
                             size="small"
                             sx={{
-                              background: `${project.color}22`,
+                              background: `${project.color}15`,
                               color: project.color,
-                              border: `1px solid ${project.color}44`,
+                              border: `1px solid ${project.color}33`,
+                              fontSize: { xs: '0.75rem', md: '0.8rem' },
+                              fontWeight: 500,
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                background: `${project.color}30`,
+                                transform: 'translateY(-2px)',
+                                boxShadow: `0 4px 12px ${project.color}40`,
+                              }
                             }}
                           />
                         ))}
                       </Box>
                     </CardContent>
-                    <CardActions sx={{ p: 2, pt: 0 }}>
+                    <CardActions sx={{ p: { xs: 2, md: 3 }, pt: 0, gap: 1 }}>
                       <Button
                         size="small"
-                        sx={{ color: project.color }}
+                        sx={{ 
+                          color: project.color,
+                          fontSize: { xs: '0.8rem', md: '0.875rem' },
+                          fontWeight: 600,
+                          textTransform: 'none',
+                          '&:hover': {
+                            background: `${project.color}15`,
+                          }
+                        }}
                       >
                         View Code
                       </Button>
                       <Button
                         size="small"
-                        sx={{ color: project.color }}
+                        sx={{ 
+                          color: project.color,
+                          fontSize: { xs: '0.8rem', md: '0.875rem' },
+                          fontWeight: 600,
+                          textTransform: 'none',
+                          '&:hover': {
+                            background: `${project.color}15`,
+                          }
+                        }}
                       >
                         Live Demo
                       </Button>
@@ -1116,98 +1354,136 @@ function App() {
         <Box
           id="contact"
           sx={{
-            py: 12,
+            py: { xs: 8, md: 12 },
+            px: { xs: 2, sm: 3 },
             background: 'linear-gradient(180deg, #0a0e27 0%, #1a1e3e 100%)',
+            position: 'relative',
+            overflow: 'hidden',
           }}
         >
           <Container maxWidth="md">
-            <Typography
-              variant="h2"
-              align="center"
-              sx={{
-                mb: 4,
-                fontSize: { xs: '2.5rem', md: '3.5rem' },
-                background: 'linear-gradient(45deg, #00e5ff, #ff00ff)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              Let's Work Together
-            </Typography>
-            <Typography
-              variant="h6"
-              align="center"
-              sx={{
-                mb: 8,
-                color: 'rgba(255, 255, 255, 0.7)',
-                fontSize: { xs: '1.1rem', md: '1.3rem' },
-              }}
-            >
-              Have a project in mind? Let's create something amazing together!
-            </Typography>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                gap: 4,
-                flexWrap: 'wrap'
-              }}
-            >
-              <Button
-                variant="contained"
-                size="large"
-                startIcon={<Email />}
-                onClick={() => window.location.href = 'mailto:anasama495@gmail.com'}
+            <Box sx={{ textAlign: 'center', mb: { xs: 6, md: 8 } }}>
+              <Typography
+                variant="overline"
                 sx={{
-                  background: 'linear-gradient(45deg, #00e5ff, #0099cc)',
-                  px: 4,
-                  py: 2,
-                  fontSize: '1.1rem',
-                  '&:hover': {
-                    background: 'linear-gradient(45deg, #0099cc, #00e5ff)',
-                  }
-                }}
-              >
-                Email Me
-              </Button>
-              <Button
-                variant="outlined"
-                size="large"
-                startIcon={<GitHub />}
-                onClick={() => window.open('https://github.com/appuafran66-prog', '_blank')}
-                sx={{
-                  borderColor: '#ff00ff',
-                  color: '#ff00ff',
-                  px: 4,
-                  py: 2,
-                  fontSize: '1.1rem',
-                  '&:hover': {
-                    borderColor: '#00e5ff',
-                    color: '#00e5ff',
-                  }
-                }}
-              >
-                GitHub
-              </Button>
-              <Button
-                variant="outlined"
-                size="large"
-                startIcon={<LinkedIn />}
-                onClick={() => window.open('https://www.linkedin.com/in/mohamed-anas-731361394', '_blank')}
-                sx={{
-                  borderColor: '#00e5ff',
                   color: '#00e5ff',
-                  px: 4,
-                  py: 2,
-                  fontSize: '1.1rem',
-                  '&:hover': {
-                    borderColor: '#ff00ff',
-                    color: '#ff00ff',
-                  }
+                  fontSize: { xs: '0.85rem', md: '1rem' },
+                  letterSpacing: '0.2em',
+                  fontWeight: 600,
+                  mb: 2,
+                  display: 'block',
                 }}
               >
-                LinkedIn
-              </Button>
+                GET IN TOUCH
+              </Typography>
+              <Typography
+                variant="h2"
+                sx={{
+                  fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' },
+                  background: 'linear-gradient(45deg, #00e5ff, #ff00ff)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: 700,
+                  mb: 2,
+                }}
+              >
+                Let's Work Together
+              </Typography>
+              <Box
+                sx={{
+                  width: { xs: '60px', md: '80px' },
+                  height: '4px',
+                  background: 'linear-gradient(90deg, #00e5ff, #ff00ff)',
+                  margin: '0 auto 24px',
+                  borderRadius: '2px',
+                }}
+              />
+              <Typography
+                variant="h6"
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  fontSize: { xs: '1rem', md: '1.2rem' },
+                  maxWidth: '500px',
+                  margin: '0 auto',
+                }}
+              >
+                Have a project in mind? Let's create something amazing together!
+              </Typography>
+            </Box>
+
+            {/* Contact Form */}
+            <ContactForm />
+
+            {/* Alternative Contact Methods */}
+            <Box sx={{ mt: 6 }}>
+              <Typography
+                variant="body2"
+                align="center"
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  mb: 3,
+                  fontSize: { xs: '0.9rem', md: '1rem' },
+                }}
+              >
+                Or reach out directly:
+              </Typography>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: { xs: 2, md: 3 },
+                  flexWrap: 'wrap'
+                }}
+              >
+                <IconButton
+                  size="large"
+                  sx={{
+                    color: '#00e5ff',
+                    background: 'rgba(0, 229, 255, 0.1)',
+                    '&:hover': {
+                      background: 'rgba(0, 229, 255, 0.2)',
+                      transform: 'translateY(-3px)',
+                    },
+                    transition: 'all 0.3s ease',
+                  }}
+                  onClick={() => window.location.href = 'mailto:anasama495@gmail.com'}
+                  aria-label="Email"
+                >
+                  <Email fontSize="large" />
+                </IconButton>
+                <IconButton
+                  size="large"
+                  sx={{
+                    color: '#ff00ff',
+                    background: 'rgba(255, 0, 255, 0.1)',
+                    '&:hover': {
+                      background: 'rgba(255, 0, 255, 0.2)',
+                      transform: 'translateY(-3px)',
+                    },
+                    transition: 'all 0.3s ease',
+                  }}
+                  onClick={() => window.open('https://github.com/appuafran66-prog', '_blank', 'noopener,noreferrer')}
+                  aria-label="GitHub"
+                >
+                  <GitHub fontSize="large" />
+                </IconButton>
+                <IconButton
+                  size="large"
+                  sx={{
+                    color: '#00e5ff',
+                    background: 'rgba(0, 229, 255, 0.1)',
+                    '&:hover': {
+                      background: 'rgba(0, 229, 255, 0.2)',
+                      transform: 'translateY(-3px)',
+                    },
+                    transition: 'all 0.3s ease',
+                  }}
+                  onClick={() => window.open('https://www.linkedin.com/in/mohamed-anas-731361394', '_blank', 'noopener,noreferrer')}
+                  aria-label="LinkedIn"
+                >
+                  <LinkedIn fontSize="large" />
+                </IconButton>
+              </Box>
             </Box>
           </Container>
         </Box>

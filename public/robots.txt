@@ -1,3 +1,19 @@
+# robots.txt for mohamedanas.me
 # https://www.robotstxt.org/robotstxt.html
+
+# Allow all search engines
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin
+Disallow: /*.json$
+Disallow: /static/
+
+# Sitemap location
+Sitemap: https://mohamedanas.me/sitemap.xml
+
+# Crawl-delay for specific bots (optional)
+User-agent: Googlebot
+Crawl-delay: 0
+
+User-agent: Bingbot
+Crawl-delay: 0
